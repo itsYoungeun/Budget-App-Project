@@ -26,7 +26,7 @@ class Category:
         return amount <= self.get_balance()
 
     def __str__(self):
-        title = f"*************{self.name}*************"
+        title = f"{self.name}".center(30, "*")
         ledger_str = ""
         for item in self.ledger:
             description = item['description'][:23]
@@ -36,37 +36,36 @@ class Category:
         return title + "\n" + ledger_str + total
 
 def create_spend_chart(categories):
-    # Calculate total spent across all categories
-    total_spent = sum(
-        sum(item['amount'] for item in category.ledger if item['amount'] < 0)
-        for category in categories
-    )
-    
+    # Calculate total spent and percentages
+    total_spent = sum(sum(-entry['amount'] for entry in cat.ledger if entry['amount'] < 0) for cat in categories)
+    percentages = [
+        int((sum(-entry['amount'] for entry in cat.ledger if entry['amount'] < 0) / total_spent) * 100 // 10 * 10)
+        for cat in categories
+    ]
+
+    # Build the header
     chart = "Percentage spent by category\n"
-    
-    # Calculate the percentage spent for each category
-    percentages = []
-    for category in categories:
-        spent = sum(item['amount'] for item in category.ledger if item['amount'] < 0)
-        percentage = (spent / total_spent) * 100 if total_spent > 0 else 0
-        percentages.append(int(percentage))
-    
-    # Build the chart (100% to 0%)
+
+    # Add the percentage lines (100% to 0%)
     for i in range(100, -1, -10):
-        chart += f"{i:3}|" + ''.join(' o ' if percentage >= i else ' ' for percentage in percentages) + "\n"
-    
-    # Build the horizontal line
-    chart += "    -" + "---" * len(categories) + "\n"
-    
-    # Add category names vertically under the bars
-    max_length = max(len(category.name) for category in categories)
+        chart += f"{i:3}|"  # Add percentage label with alignment
+        for percentage in percentages:
+            chart += " o " if percentage >= i else "   "
+        chart += " \n"
+
+    # Add the horizontal line
+    chart += "    " + "-" * (len(categories) * 3 + 1) + "\n"
+
+    # Add the category names vertically
+    category_names = [cat.name for cat in categories]
+    max_length = max(len(name) for name in category_names)
     for i in range(max_length):
-        chart += "    "  # Leading space for alignment
-        for category in categories:
-            chart += f" {category.name[i] if i < len(category.name) else ' '} "
-        chart += "\n"
-    
-    return chart.strip()
+        chart += "    "  # Leading spaces
+        for name in category_names:
+            chart += f" {name[i] if i < len(name) else ' '} "
+        chart += " \n"
+
+    return chart.rstrip("\n")
 
 # Example usage
 food = Category('Food')
